@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfect Circle Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000000;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            text-align: center;
+            position: relative;
+            padding: 20px;
+        }
+
+        .title {
+            font-size: 2.2em;
+            font-weight: 900;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShift 4s ease infinite;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+            letter-spacing: 2px;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            font-size: 1.3em;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: #ff6b6b;
+            text-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+            letter-spacing: 1px;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            25% { background-position: 100% 50%; }
+            50% { background-position: 100% 100%; }
+            75% { background-position: 0% 100%; }
+        }
+
+        canvas {
+            border: 3px solid #333;
+            border-radius: 20px;
+            cursor: crosshair;
+            background: #0a0a0a;
+            box-shadow: 
+                0 0 50px rgba(255, 255, 255, 0.05),
+                inset 0 0 50px rgba(0, 0, 0, 0.8);
+            transition: all 0.3s ease;
+        }
+
+        canvas:hover {
+            box-shadow: 
+                0 0 80px rgba(255, 255, 255, 0.1),
+                inset 0 0 50px rgba(0, 0, 0, 0.8);
+        }
+
+        .score-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4em;
+            font-weight: 900;
+            color: #ffd700;
+            text-shadow: 
+                0 0 20px rgba(255, 215, 0, 0.8),
+                2px 2px 4px rgba(0,0,0,0.8);
+            pointer-events: none;
+            z-index: 10;
+            animation: pulse 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: translate(-50%, -50%) scale(1); }
+            to { transform: translate(-50%, -50%) scale(1.05); }
+        }
+
+        .instructions {
+            margin-top: 30px;
+            font-size: 1.1em;
+            color: #666;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 1.1em;
+            color: #666;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .completion-message {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+            padding: 20px 40px;
+            border-radius: 15px;
+            display: none;
+            z-index: 100;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(78, 205, 196, 0.4);
+            animation: slideDown 0.5s ease-out;
+            max-width: 90%;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100%); }
+            to { transform: translateX(-50%) translateY(0); }
+        }
+
+        .completion-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .completion-details {
+            font-size: 1em;
+            color: white;
+            line-height: 1.4;
+        }
+
+        .incomplete-message {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            padding: 20px 40px;
+            border-radius: 15px;
+            display: none;
+            z-index: 100;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 107, 107, 0.4);
+            animation: slideDown 0.5s ease-out;
+            max-width: 90%;
+        }
+
+        .incomplete-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .incomplete-details {
+            font-size: 1em;
+            color: white;
+            line-height: 1.4;
+        }
+
+        .score-panel {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding: 15px 30px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 15px;
+            border: 2px solid #333;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .current-score, .best-score {
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .current-score {
+            color: #ffd700;
+        }
+
+        .best-score {
+            color: #4ecdc4;
+        }
+
+        .new-best-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: white;
+            z-index: 100;
+            display: none;
+            animation: slideDown 0.5s ease-out;
+        }
+
+        .game-over-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(20,20,40,0.95));
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #ff6b6b;
+            display: none;
+            z-index: 20;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(255, 107, 107, 0.3);
+        }
+
+        .game-over-message div {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #ff6b6b;
+            margin-bottom: 20px;
+        }
+
+        .reset-btn {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border: none;
+            padding: 18px 40px;
+            border-radius: 15px;
+            color: white;
+            font-size: 1.3em;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 25px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+
+        .center-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: radial-gradient(circle, #ffd700, #ffaa00);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            box-shadow: 
+                0 0 30px #ffd700,
+                0 0 60px rgba(255, 215, 0, 0.5);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 30px #ffd700, 0 0 60px rgba(255, 215, 0, 0.5); }
+            to { box-shadow: 0 0 40px #ffd700, 0 0 80px rgba(255, 215, 0, 0.7); }
+        }
+
+        .wrong-path-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, rgba(255, 0, 0, 0.9), rgba(139, 0, 0, 0.9));
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #ff4444;
+            display: none;
+            z-index: 15;
+            box-shadow: 0 0 50px rgba(255, 68, 68, 0.5);
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translate(-50%, -50%); }
+            25% { transform: translate(-48%, -50%); }
+            75% { transform: translate(-52%, -50%); }
+        }
+
+        .win-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(0, 255, 0, 0.95), rgba(0, 200, 100, 0.95));
+            padding: 25px 40px;
+            border-radius: 15px;
+            border: 3px solid #00ff00;
+            display: none;
+            z-index: 25;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+            animation: slideDown 0.5s ease-out;
+            max-width: 90%;
+        }
+
+
+
+        .win-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .win-score {
+            font-size: 1em;
+            color: #ffff00;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .final-result {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, rgba(30, 30, 30, 0.95), rgba(50, 50, 80, 0.95));
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #4ecdc4;
+            display: none;
+            z-index: 20;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(78, 205, 196, 0.3);
+        }
+
+        .final-result-title {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4ecdc4;
+            margin-bottom: 15px;
+        }
+
+        .final-score {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="title">I DARE YOU TO DRAW<br>A PERFECT CIRCLE</h1>
+        <div class="subtitle">ACCEPT THE CHALLENGE • BEAT THIS GAME IF YOU CAN</div>
+        <div style="position: relative;">
+            <canvas id="gameCanvas" width="600" height="600"></canvas>
+            <div class="center-dot"></div>
+            <div class="score-display" id="scoreDisplay">0%</div>
+        </div>
+        <div class="score-panel">
+            <div class="current-score">Current: <span id="currentScoreText">0%</span></div>
+            <div class="best-score">Best: <span id="bestScoreText">0%</span></div>
+        </div>
+        <div class="new-best-message" id="newBestMessage">🎉 NEW BEST SCORE! 🎉</div>
+        <div class="completion-message" id="completionMessage">
+            <div class="completion-title" id="completionTitle">🎯 CIRCLE COMPLETED! 🎯</div>
+            <div class="completion-details" id="completionDetails"></div>
+        </div>
+        <div class="incomplete-message" id="incompleteMessage">
+            <div class="incomplete-title">Circle Incomplete!</div>
+            <div class="incomplete-details" id="incompleteDetails"></div>
+        </div>
+        <div class="game-over-message" id="gameOverMessage">
+            <div id="gameOverText">Try again and draw full circle!</div>
+            <button class="reset-btn" onclick="resetGame()">Try Again</button>
+        </div>
+        <div class="win-message" id="winMessage">
+            <div class="win-title">🎉 Great! Circle Complete! 🎉</div>
+            <div class="win-score" id="winScore">Current Score: 0% | Best Score: 0% | Overall Best: 99.8% - Try to beat it, best of luck!</div>
+        </div>
+        <div class="final-result" id="finalResult">
+            <div class="final-result-title">Circle Complete!</div>
+            <div class="final-score" id="finalScore">0%</div>
+            <button class="reset-btn" onclick="resetGame()">Try Again</button>
+        </div>
+        <div class="instructions">
+            Click and drag to draw a perfect circle around the center dot
+        </div>
+    </div>
+    <div class="footer">by Trou</div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const finalResult = document.getElementById('finalResult');
+        const finalScore = document.getElementById('finalScore');
+        const winMessage = document.getElementById('winMessage');
+        const winScore = document.getElementById('winScore');
+
+        let isDrawing = false;
+        let startPoint = null;
+        let currentPath = [];
+        let perfectRadius = 0;
+        let centerX = canvas.width / 2;
+        let centerY = canvas.height / 2;
+        let currentScore = 0;
+        let bestScore = parseFloat(localStorage.getItem('perfectCircleBestScore')) || 0;
+        let globalBestScore = 99.8; // Overall world record
+
+        // Drawing state
+        let userPath = [];
+        let perfectCircle = [];
+        let lastDrawTime = 0;
+        let pathBroken = false;
+        let angleProgression = [];
+        let totalAngleProgress = 0;
+        let startAngle = 0;
+        let completionLineAngle = 0;
+        let hasProgressed = false;
+        let crossedStartLine = false;
+        let circleCompleted = false;
+        let directionSet = false;
+        let movementDirection = 0;
+        let drawingStartTime = 0;
+        let drawingTimeout = null;
+
+        // Initialize best score display
+        document.getElementById('bestScoreText').textContent = bestScore.toFixed(1) + '%';
+
+        function distance(x1, y1, x2, y2) {
+            return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        }
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        function calculateScore() {
+            if (userPath.length < 10) return 0;
+
+            let totalDeviation = 0;
+            let maxDeviation = perfectRadius * 0.5; // Maximum acceptable deviation
+
+            for (let point of userPath) {
+                const actualDistance = distance(centerX, centerY, point.x, point.y);
+                const deviation = Math.abs(actualDistance - perfectRadius);
+                totalDeviation += Math.min(deviation, maxDeviation);
+            }
+
+            const avgDeviation = totalDeviation / userPath.length;
+            const score = Math.max(0, 100 - (avgDeviation / maxDeviation) * 100);
+            return Math.round(score * 10) / 10;
+        }
+
+        function drawPath() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (userPath.length > 1) {
+                // Draw user's path with dynamic thickness and color coding
+                for (let i = 1; i < userPath.length; i++) {
+                    const point = userPath[i];
+                    const prevPoint = userPath[i - 1];
+                    
+                    const actualDistance = distance(centerX, centerY, point.x, point.y);
+                    const deviation = Math.abs(actualDistance - perfectRadius);
+                    const maxDeviation = perfectRadius * 0.3;
+                    
+                    // Color based on accuracy
+                    const accuracy = Math.max(0, 1 - (deviation / maxDeviation));
+                    const red = Math.round(255 * (1 - accuracy));
+                    const green = Math.round(255 * accuracy);
+                    
+                    // Calculate line thickness based on drawing speed
+                    const segmentDistance = distance(prevPoint.x, prevPoint.y, point.x, point.y);
+                    const timeDiff = point.time - prevPoint.time;
+                    const speed = segmentDistance / Math.max(timeDiff, 1); // pixels per ms
+                    
+                    // Map speed to thickness (slower = thicker, faster = thinner)
+                    const minThickness = 2;
+                    const maxThickness = 8;
+                    const speedThreshold = 0.5; // adjust sensitivity
+                    const thickness = Math.max(minThickness, Math.min(maxThickness, maxThickness - (speed * speedThreshold)));
+                    
+                    ctx.strokeStyle = `rgb(${red}, ${green}, 0)`;
+                    ctx.lineWidth = thickness;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(prevPoint.x, prevPoint.y);
+                    ctx.lineTo(point.x, point.y);
+                    ctx.stroke();
+                }
+            }
+
+            // Update scores
+            updateScores();
+        }
+
+        function showWrongPathMessage() {
+            pathBroken = true;
+            isDrawing = false;
+            
+            // Create wrong path message element
+            const wrongMsg = document.createElement('div');
+            wrongMsg.className = 'wrong-path-message';
+            wrongMsg.style.display = 'block';
+            wrongMsg.innerHTML = `
+                <div style="font-size: 2.5em; font-weight: bold; color: #ff4444; margin-bottom: 10px;">Invalid Path!</div>
+                <div style="font-size: 1.2em; color: #ffaa44;">Draw a smooth circle only - no scribbling or sharp turns!</div>
+            `;
+            
+            document.querySelector('.game-container').appendChild(wrongMsg);
+            
+            setTimeout(() => {
+                wrongMsg.remove();
+                resetGame();
+            }, 2000);
+        }
+
+        function getAngle(x, y) {
+            return Math.atan2(y - centerY, x - centerX);
+        }
+
+        function normalizeAngle(angle) {
+            while (angle < 0) angle += 2 * Math.PI;
+            while (angle >= 2 * Math.PI) angle -= 2 * Math.PI;
+            return angle;
+        }
+
+        function validateCircularPath(newPoint) {
+            if (userPath.length < 5) return true; // Allow initial points
+            
+            // Check if going through center (too close to center dot)
+            const centerDistance = distance(centerX, centerY, newPoint.x, newPoint.y);
+            if (centerDistance < 25) {
+                return false;
+            }
+            
+            // Don't allow more than 360 degrees of drawing
+            if (Math.abs(totalAngleProgress) > Math.PI * 2.1) { // 378 degrees max (with small buffer)
+                return false;
+            }
+            
+            // Check if the new point is too far from expected radius
+            const radiusDeviation = Math.abs(centerDistance - perfectRadius);
+            const maxAllowedDeviation = perfectRadius * 0.6; // 60% deviation allowed
+            
+            if (radiusDeviation > maxAllowedDeviation) {
+                return false; // Too far from circular path
+            }
+            
+            // Check for erratic movement (too many sharp direction changes)
+            if (userPath.length >= 10) {
+                const recent = userPath.slice(-5);
+                const newAngle = getAngle(newPoint.x, newPoint.y);
+                
+                let sharpTurns = 0;
+                for (let i = 1; i < recent.length; i++) {
+                    const angle1 = getAngle(recent[i-1].x, recent[i-1].y);
+                    const angle2 = getAngle(recent[i].x, recent[i].y);
+                    
+                    let angleDiff = Math.abs(angle2 - angle1);
+                    if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+                    
+                    // Count sharp turns (more than 45 degrees between consecutive points)
+                    if (angleDiff > Math.PI / 4) {
+                        sharpTurns++;
+                    }
+                }
+                
+                // If too many sharp turns in recent path, it's not circular
+                if (sharpTurns >= 3) {
+                    return false;
+                }
+            }
+            
+            // Check for dramatic reversals (180-degree turns)
+            if (angleProgression.length >= 5) {
+                const recent = angleProgression.slice(-5);
+                const currentAngle = normalizeAngle(getAngle(newPoint.x, newPoint.y));
+                
+                let backwardCount = 0;
+                let totalAngleChange = 0;
+                
+                for (let i = 1; i < recent.length; i++) {
+                    let angleDiff = normalizeAngle(recent[i]) - normalizeAngle(recent[i-1]);
+                    if (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+                    if (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+                    
+                    totalAngleChange += angleDiff;
+                    
+                    // Count significant backward movements
+                    if (Math.abs(angleDiff) > Math.PI * 0.8) {
+                        backwardCount++;
+                    }
+                }
+                
+                // Only trigger if there's a dramatic reversal pattern
+                if (backwardCount >= 2 && Math.abs(totalAngleChange) > Math.PI * 1.2) {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        function isOnCompletionLine(point) {
+            // Check if point is crossing the exact starting line (from center through starting point)
+            const pointAngle = getAngle(point.x, point.y);
+            const angleDiff = Math.abs(normalizeAngle(pointAngle) - normalizeAngle(startAngle));
+            const minAngleDiff = Math.min(angleDiff, 2 * Math.PI - angleDiff);
+            
+            // Much more strict - within 10 degrees of starting line
+            return minAngleDiff < (Math.PI / 18); // 10 degrees tolerance
+        }
+
+        function checkCircleCompletion() {
+            if (userPath.length < 50) return false; // Need more points for a complete circle
+            
+            const currentPoint = userPath[userPath.length - 1];
+            const currentDistance = distance(centerX, centerY, currentPoint.x, currentPoint.y);
+            const startPoint = userPath[0];
+            
+            // Check if we've made a full 360 degrees (2π radians)
+            if (Math.abs(totalAngleProgress) >= Math.PI * 2.0) {
+                hasProgressed = true;
+            }
+            
+            // Must be close to starting point (not just angle, but actual distance)
+            const distanceToStart = distance(currentPoint.x, currentPoint.y, startPoint.x, startPoint.y);
+            const maxDistanceToStart = perfectRadius * 0.15; // Must be within 15% of radius from start point
+            
+            // If we've progressed and we're actually close to the starting point
+            if (hasProgressed && distanceToStart < maxDistanceToStart && isOnCompletionLine(currentPoint)) {
+                const radiusTolerance = perfectRadius * 0.25; // 25% tolerance for radius
+                if (Math.abs(currentDistance - perfectRadius) < radiusTolerance) {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+        function updateScores() {
+            currentScore = calculateScore();
+            
+            // Safely update current score
+            const currentScoreElement = document.getElementById('currentScoreText');
+            if (currentScoreElement) {
+                currentScoreElement.textContent = currentScore.toFixed(1) + '%';
+            }
+            
+            // Color the main score display
+            if (scoreDisplay) {
+                if (currentScore >= 90) {
+                    scoreDisplay.style.color = '#00ff00';
+                } else if (currentScore >= 70) {
+                    scoreDisplay.style.color = '#ffff00';
+                } else if (currentScore >= 50) {
+                    scoreDisplay.style.color = '#ff8800';
+                } else {
+                    scoreDisplay.style.color = '#ff0000';
+                }
+                
+                scoreDisplay.textContent = currentScore.toFixed(1) + '%';
+            }
+        }
+
+        function saveNewBestScore() {
+            localStorage.setItem('perfectCircleBestScore', bestScore.toString());
+            
+            // Show new best message
+            const newBestMsg = document.getElementById('newBestMessage');
+            if (newBestMsg) {
+                newBestMsg.style.display = 'block';
+                setTimeout(() => {
+                    newBestMsg.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function completeGame() {
+            circleCompleted = true;
+            isDrawing = false;
+            
+            // Clear any existing timeouts
+            if (drawingTimeout) {
+                clearTimeout(drawingTimeout);
+                drawingTimeout = null;
+            }
+            
+            // Check for new best score
+            if (currentScore > bestScore) {
+                bestScore = currentScore;
+                const bestScoreElement = document.getElementById('bestScoreText');
+                if (bestScoreElement) {
+                    bestScoreElement.textContent = bestScore.toFixed(1) + '%';
+                }
+                saveNewBestScore();
+            }
+            
+            // Show completion message on top
+            if (winScore && winMessage) {
+                winScore.textContent = `Current Score: ${currentScore.toFixed(1)}% | Best Score: ${bestScore.toFixed(1)}% | Overall Best: 99.8% - Try to beat it, best of luck!`;
+                winMessage.style.display = 'block';
+                scoreDisplay.style.display = 'none';
+                
+                // Auto hide the message after 4 seconds and reset game
+                setTimeout(() => {
+                    winMessage.style.display = 'none';
+                    resetGame();
+                }, 4000);
+            }
+        }
+
+        function showIncompleteMessage() {
+            // Clear any existing timeouts
+            if (drawingTimeout) {
+                clearTimeout(drawingTimeout);
+                drawingTimeout = null;
+            }
+            
+            const incompleteMsg = document.getElementById('incompleteMessage');
+            const incompleteDetails = document.getElementById('incompleteDetails');
+            
+            if (incompleteMsg && incompleteDetails) {
+                incompleteDetails.textContent = `You only completed ${Math.abs(totalAngleProgress * 180 / Math.PI).toFixed(0)}° of the circle. Try to draw a complete 360° circle!`;
+                incompleteMsg.style.display = 'block';
+                
+                setTimeout(() => {
+                    incompleteMsg.style.display = 'none';
+                    resetGame();
+                }, 3000);
+            }
+        }
+
+        function startDrawingTimeout() {
+            // Clear any existing timeout
+            if (drawingTimeout) {
+                clearTimeout(drawingTimeout);
+            }
+            
+            // Set timeout for incomplete circle (3 seconds of inactivity)
+            drawingTimeout = setTimeout(() => {
+                if (isDrawing && userPath.length > 10 && !circleCompleted) {
+                    isDrawing = false;
+                    showIncompleteMessage();
+                }
+            }, 3000);
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (pathBroken) return;
+            
+            const pos = getMousePos(e);
+            pos.time = Date.now();
+            
+            // Calculate radius based on distance from center
+            perfectRadius = distance(centerX, centerY, pos.x, pos.y);
+            
+            // Don't allow drawing too close to center (reduced restriction)
+            if (perfectRadius < 30 || perfectRadius > 280) return;
+            
+            // Set up completion line - from center through starting point
+            startAngle = getAngle(pos.x, pos.y);
+            completionLineAngle = startAngle;
+            
+            isDrawing = true;
+            userPath = [pos];
+            angleProgression = [startAngle];
+            totalAngleProgress = 0;
+            hasProgressed = false;
+            crossedStartLine = false;
+            currentScore = 0;
+            lastDrawTime = Date.now();
+            pathBroken = false;
+            circleCompleted = false;
+            drawingStartTime = Date.now();
+            
+            if (scoreDisplay) {
+                scoreDisplay.style.display = 'block';
+            }
+            if (finalResult) {
+                finalResult.style.display = 'none';
+            }
+            if (winMessage) {
+                winMessage.style.display = 'none';
+            }
+            
+            // Start the drawing timeout
+            startDrawingTimeout();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing || pathBroken) return;
+            
+            const pos = getMousePos(e);
+            pos.time = Date.now();
+            
+            // Reset the drawing timeout since user is actively drawing
+            startDrawingTimeout();
+            
+            // Validate the path (check if it resembles a circle)
+            if (!validateCircularPath(pos)) {
+                showWrongPathMessage();
+                return;
+            }
+            
+            // Track angle progression
+            const currentAngle = getAngle(pos.x, pos.y);
+            if (angleProgression.length > 0) {
+                const lastAngle = angleProgression[angleProgression.length - 1];
+                let angleDiff = currentAngle - lastAngle;
+                
+                // Normalize angle difference
+                if (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+                if (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+                
+                totalAngleProgress += angleDiff;
+            }
+            
+            angleProgression.push(currentAngle);
+            if (angleProgression.length > 10) {
+                angleProgression.shift(); // Keep only recent angles
+            }
+            
+            userPath.push(pos);
+            drawPath();
+            
+            // Check for completion while drawing
+            if (checkCircleCompletion()) {
+                completeGame();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (!isDrawing || pathBroken) return;
+            
+            isDrawing = false;
+            
+            // Clear the drawing timeout
+            if (drawingTimeout) {
+                clearTimeout(drawingTimeout);
+                drawingTimeout = null;
+            }
+            
+            if (checkCircleCompletion() && userPath.length > 50) {
+                completeGame();
+            } else if (userPath.length > 10) {
+                // User stopped drawing but didn't complete the circle
+                setTimeout(() => {
+                    showIncompleteMessage();
+                }, 500);
+            }
+        });
+
+        // Touch events for mobile
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (pathBroken) return;
+            
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousedown', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (pathBroken) return;
+            
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (pathBroken) return;
+            
+            const mouseEvent = new MouseEvent('mouseup', {});
+            canvas.dispatchEvent(mouseEvent);
+        });
+
+        function resetGame() {
+            // Clear any timeouts
+            if (drawingTimeout) {
+                clearTimeout(drawingTimeout);
+                drawingTimeout = null;
+            }
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            userPath = [];
+            angleProgression = [];
+            totalAngleProgress = 0;
+            hasProgressed = false;
+            crossedStartLine = false;
+            startAngle = 0;
+            completionLineAngle = 0;
+            isDrawing = false;
+            pathBroken = false;
+            currentScore = 0;
+            perfectRadius = 0;
+            lastDrawTime = 0;
+            circleCompleted = false;
+            drawingStartTime = 0;
+            
+            // Reset display elements safely
+            if (scoreDisplay) {
+                scoreDisplay.textContent = '0%';
+                scoreDisplay.style.display = 'none';
+            }
+            if (finalResult) {
+                finalResult.style.display = 'none';
+            }
+            if (winMessage) {
+                winMessage.style.display = 'none';
+            }
+            
+            // Remove any existing wrong path messages
+            const existingMsg = document.querySelector('.wrong-path-message');
+            if (existingMsg) existingMsg.remove();
+            
+            // Hide all messages
+            const gameOverMsg = document.getElementById('gameOverMessage');
+            if (gameOverMsg) gameOverMsg.style.display = 'none';
+            
+            const incompleteMsg = document.getElementById('incompleteMessage');
+            if (incompleteMsg) incompleteMsg.style.display = 'none';
+            
+            const completionMsg = document.getElementById('completionMessage');
+            if (completionMsg) completionMsg.style.display = 'none';
+        }
+
+        // Initialize
+        if (scoreDisplay) {
+            scoreDisplay.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
