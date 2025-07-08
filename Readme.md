@@ -34,13 +34,13 @@ Just download the HTML file and open it in any modern web browser. That's it!
 
 ```bash
 # Clone the repo
-git clone https://github.com/Pranav-1100/perfect-circle-game.git
+git clone https://github.com/Pranav-1100/dare-to-draw-a-perfect-circle.git
 
 # Open the game
 open index.html
 ```
 
-Or simply visit the [live demo](https://Pranav-1100.github.io/perfect-circle-game) to play right now.
+Or simply visit the [live demo](https://dare-to-draw-a-perfect-circle.vercel.app/) to play right now.
 
 ## 🎯 Can You Beat 90%?
 
